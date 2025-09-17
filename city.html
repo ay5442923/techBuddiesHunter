@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Waterborne Disease — Red Zone Map (India)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha512-somehash"
+    crossorigin=""
+  />
+  <style>
+    body { margin:0; font-family: system-ui, Arial, sans-serif;
+     }
+    #map { height: 80vh; width: 100%; }
+    .controls {
+      padding: 10px;
+      display:flex;
+      gap:8px;
+      align-items:center;
+      background:#fff;
+      box-shadow:0 2px 6px rgba(0,0,0,.12);
+    }
+    
+      
+    label { font-size:14px; }
+    select, input[type=number] { padding:6px; font-size:14px; }
+    button { padding:6px 10px; font-size:14px; cursor:pointer; }
+    .legend { padding:6px; background:rgba(255,255,255,.9); border-radius:6px; box-shadow:0 1px 4px rgba(0,0,0,.08); }
+  </style>
+</head>
+<body>
+
+  <div class="controls">
+    <label for="city">City:</label>
+    <select id="city">
+      <option value="ahmedabad">Ahmedabad (default)</option>
+      <option value="jaipur">Jaipur</option>
+      <option value="mumbai">Mumbai</option>
+      <option value="nagpur">Nagpur</option>
+    </select>
+
+    <label for="radius">Radius (km):</label>
+    <input id="radius" type="number" min="0.5" step="0.5" value="3" style="width:80px" />
+
+    <button id="apply">Show Red Zone</button>
+    <div style="flex:1"></div>
+    <div class="legend">Red = high-risk waterborne zone (visual)</div>
+    <div class="map"><img src="map.png" alt="map"></div>
+    <div class="graph"><img src="graph.png" alt="graph"></div>
+  </div>
+
+  <div id="map"></div>
+
+  <!-- Leaflet JS -->
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha512-somehash"
+    crossorigin=""
+  ></script>
+
+  <script>
+    // Example city coordinates (lat, lon)
+    // These are editable. Default chosen: Ahmedabad (reported recent spikes).
+    const cities = {
+      ahmedabad: { name: "Ahmedabad, Gujarat", coords: [23.0225, 72.5714] },
+      jaipur:    { name: "Jaipur, Rajasthan",   coords: [26.9124, 75.7873] },
+      mumbai:    { name: "Mumbai, Maharashtra", coords: [19.0760, 72.8777] },
+      nagpur:    { name: "Nagpur, Maharashtra", coords: [21.1458, 79.0882] }
+    };
+
+    // Initialize map
+    const map = L.map('map').setView(cities.ahmedabad.coords, 12);
+
+    // Tile layer (OpenStreetMap)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Layer group to hold marker + circle
+    const zoneLayer = L.layerGroup().addTo(map);
+
+    function showZone(cityKey, radiusKm) {
+      zoneLayer.clearLayers();
+      const city = cities[cityKey];
+      if (!city) return;
+
+      // add a marker
+      const marker = L.marker(city.coords).bindPopup(`<b>${city.name}</b>`).addTo(zoneLayer);
+
+      // Add a red translucent circle (the "red zone")
+      const radiusMeters = Math.max(100, radiusKm * 1000);
+      const circle = L.circle(city.coords, {
+        radius: radiusMeters,
+        color: '#c62828',           // border color (red)
+        weight: 2,
+        fillColor: '#ff1744',      // fill (red)
+        fillOpacity: 0.25
+      }).addTo(zoneLayer);
+
+      // Fit the map to the circle bounds with some padding
+      map.fitBounds(circle.getBounds(), { padding: [40,40] });
+
+      // update popup with details
+      marker.bindPopup(`
+        <b>${city.name}</b><br/>
+        Red zone radius: ${radiusKm} km<br/>
+        (Edit coordinates or radius in the code as needed.)
+      `);
+    }
+
+    // initial show
+    showZone('ahmedabad', parseFloat(document.getElementById('radius').value));
+
+    // UI interactions
+    document.getElementById('apply').addEventListener('click', () => {
+      const cityKey = document.getElementById('city').value;
+      const radiusKm = parseFloat(document.getElementById('radius').value) || 1;
+      showZone(cityKey, radiusKm);
+    });
+
+    // convenience: change on select
+    document.getElementById('city').addEventListener('change', () => {
+      const cityKey = document.getElementById('city').value;
+      const radiusKm = parseFloat(document.getElementById('radius').value) || 1;
+      showZone(cityKey, radiusKm);
+    });
+
+    // Optional: allow user to click map to recenter and set new red zone
+    map.on('click', function(e) {
+      const latlng = e.latlng;
+      // place a temporary zone (1 km) at clicked position
+      zoneLayer.clearLayers();
+      L.marker(latlng).addTo(zoneLayer).bindPopup('Custom point').openPopup();
+      L.circle(latlng, { radius: 1000, color:'#c62828', fillColor:'#ff1744', fillOpacity:0.25 }).addTo(zoneLayer);
+    });
+
+    // --- Notes for maintainers/users ---
+    // - To change to a different "most problematic" city, edit the default value or add new cities to the `cities` object.
+    // - To show a more precise red zone polygon (instead of a circle), replace L.circle with L.polygon and supply coordinates.
+    // - This map is purely visual and does not imply official public-health boundaries. For official outbreak zones use government health department geojson layers.
+  </script>
+</body>
+</html>

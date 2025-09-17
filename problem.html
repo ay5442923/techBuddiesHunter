@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Water-borne Disease Checklist</title>
+  <style>
+    :root{
+      --bg:#eb2222; --card:#ffffff; --accent:#0b6cf6; --muted:#15ca88;
+    }
+    body{
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(180deg,var(--bg),#0fbc74 60%);
+      margin:10; padding:32px; color:#0f172a; width: 100%; display: flex;
+     
+      
+    }
+    .img{
+      width: 85%; height: auto; border-radius: 12px; margin-bottom: 20px;
+    }
+    .img img{
+      width: 85%; height: auto; border-radius: 12px;
+    }
+    
+      
+    .card{
+      max-width:760px; margin:0 auto; background:var(--card); padding:20px; border-radius:12px;
+      box-shadow: 0 6px 18px rgba(11,108,246,0.08);
+      text-align: right;
+    }
+    h1{ margin:0 0 8px; font-size:1.25rem; }
+    p.lead{ margin:0 0 18px; color:var(--muted); }
+    fieldset{ border:1px solid #e6eefc; padding:16px; border-radius:8px; margin-bottom:14px; }
+    legend{ font-weight:600; padding:0 6px; }
+    .disease-list{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:8px; }
+    label.checkbox{
+      display:flex; align-items:center; gap:10px; padding:8px; border-radius:8px;
+      cursor:pointer; transition:background .12s, box-shadow .12s;
+    }
+    label.checkbox:hover{ background:#f6fbff; box-shadow:0 1px 0 rgba(7,89,197,0.03); }
+    input[type="checkbox"]{ width:18px; height:18px; flex:0 0 18px; accent-color:var(--accent); }
+    .meta{ font-size:0.86rem; color:var(--muted); }
+    .controls{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+    button{
+      background:var(--accent); color:white; border:0; padding:8px 12px; border-radius:8px; cursor:pointer;
+      font-weight:600;
+    }
+    button.secondary{ background:#eef2ff; color:var(--accent); font-weight:600; border:1px solid #dce8ff; }
+    #selectedOutput{ margin-top:12px; padding:12px; border-radius:8px; background:#f8fafc; color: #04224b; }
+    .count{ font-weight:700; color:var(--accent); margin-left:6px; }
+    @media (max-width:420px){ body{padding:18px} .card{padding:14px} }
+  </style>
+</head>
+<body>
+  <main class="card" role="main" aria-labelledby="pageTitle">
+    
+    <div class="img"><img src="water.jpeg" alt="img"></div>
+    <h1 id="pageTitle">Water-borne disease checklist</h1>
+    <p class="lead">Select the diseases you'd like to track or include in your survey/form. This example includes a small script to count and show the selected items.</p>
+
+    <div class="controls" aria-hidden="false">
+      <button id="selectAllBtn" type="button" title="Select all diseases">Select all</button>
+      <button id="clearAllBtn" type="button" class="secondary" title="Clear all selections">Clear all</button>
+      <button id="showSelectedBtn" type="button" class="secondary" title="Show selected items">Show selected</button>
+      <div style="margin-left:auto;display:flex;align-items:center">
+        <span class="meta">Selected: <span id="count" class="count">0</span></span>
+      </div>
+    </div>
+
+    <form id="diseaseForm" aria-describedby="formDesc">
+      <p id="formDesc" class="meta">Tap a checkbox or use the controls above. Items are examples of common water-borne diseases.</p>
+
+      <fieldset>
+        <legend>Common water-borne diseases</legend>
+        <div class="disease-list" role="group" aria-label="Water borne diseases list">
+          <!-- Each label contains the checkbox for easier clicking and better a11y -->
+          <label class="checkbox"><input type="checkbox" name="disease" value="Cholera" /> <span>Cholera</span></label>
+          <label class="checkbox"><input type="checkbox" name="disease" value="Typhoid fever" /> <span>Typhoid fever</span></label>
+          <label class="checkbox"><input type="checkbox" name="disease" value="Acute diarrheal disease (Dysentery)" /> <span>Acute diarrheal disease (Dysentery)</span></label>
+          <label class="checkbox"><input type="checkbox" name="disease" value="Hepatitis A" /> <span>Hepatitis A</span></label>
+          <label class="checkbox"><input type="checkbox" name="disease" value="Giardiasis" /> <span>Giardiasis</span></label>
+          <label class="checkbox"><input type="checkbox" name="disease" value="Cryptosporidiosis" /> <span>Cryptosporidiosis</span></label>
+          <label class="checkbox"><input type="checkbox" name="disease" value="Schistosomiasis" /> <span>Schistosomiasis</span></label>
+          <label class="checkbox"><input type="checkbox" name="disease" value="Leptospirosis" /> <span>Leptospirosis</span></label>
+          <label class="checkbox"><input type="checkbox" name="disease" value="Norovirus" /> <span>Norovirus</span></label>
+          <label class="checkbox"><input type="checkbox" name="disease" value="E. coli infection" /> <span>E. coli infection</span></label>
+        </div>
+      </fieldset>
+    </form>
+
+    <div id="selectedOutput" aria-live="polite" hidden>
+      <strong>Selected items:</strong>
+      <ul id="selectedList" style="margin:8px 0 0 18px"></ul>
+    </div>
+
+    
+  </main>
+
+  <script>
+    // DOM references
+    const checkboxes = Array.from(document.querySelectorAll('input[type="checkbox"][name="disease"]'));
+    const countEl = document.getElementById('count');
+    const selectAllBtn = document.getElementById('selectAllBtn');
+    const clearAllBtn = document.getElementById('clearAllBtn');
+    const showSelectedBtn = document.getElementById('showSelectedBtn');
+    const selectedOutput = document.getElementById('selectedOutput');
+    const selectedList = document.getElementById('selectedList');
+
+    // Update counter when any checkbox changes
+    function updateCount() {
+      const n = checkboxes.filter(cb => cb.checked).length;
+      countEl.textContent = String(n);
+    }
+
+    // Select all checkboxes
+    function selectAll() {
+      checkboxes.forEach(cb => cb.checked = true);
+      updateCount();
+    }
+
+    // Clear all checkboxes
+    function clearAll() {
+      checkboxes.forEach(cb => cb.checked = false);
+      updateCount();
+      selectedOutput.hidden = true;
+    }
+
+    // Show selected items as a list
+    function showSelected() {
+      const selected = checkboxes.filter(cb => cb.checked).map(cb => cb.value);
+      selectedList.innerHTML = '';
+      if (selected.length === 0) {
+        selectedList.innerHTML = '<li><em>No items selected</em></li>';
+      } else {
+        selected.forEach(v => {
+          const li = document.createElement('li');
+          li.textContent = v;
+          selectedList.appendChild(li);
+        });
+      }
+      selectedOutput.hidden = false;
+      selectedOutput.scrollIntoView({behavior:'smooth', block:'nearest'});
+    }
+
+    // Attach listeners
+    checkboxes.forEach(cb => cb.addEventListener('change', updateCount));
+    selectAllBtn.addEventListener('click', selectAll);
+    clearAllBtn.addEventListener('click', clearAll);
+    showSelectedBtn.addEventListener('click', showSelected);
+
+    // initialize count on page load
+    updateCount();
+
+    // Keyboard accessibility: allow "a" to select all, "c" clear, "s" show
+    document.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.isContentEditable) return;
+      if (e.key === 'a') { selectAll(); e.preventDefault(); }
+      if (e.key === 'c') { clearAll(); e.preventDefault(); }
+      if (e.key === 's') { showSelected(); e.preventDefault(); }
+    });
+  </script>
+</body>
+</html>
