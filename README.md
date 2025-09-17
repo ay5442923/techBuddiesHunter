@@ -1,1 +1,1 @@
-# techBuddiesHunter
+# TechBuddiesHunter
